@@ -1,0 +1,35 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          xcodebuild -version
+
+      - name: Install toolchains
+        run: |
+          brew install xcodegen
+          rustup default stable
+          rustup toolchain install 1.98.1
+          rustup target add aarch64-apple-ios --toolchain 1.98.1
+
+      - name: Check game.wasm is present
+        run: ls -lh game.wasm
+
+      - name: Build IPA
+        run: ./make-ios.sh game.wasm --ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Muguet-ipa
+          path: build/Muguet.ipa
